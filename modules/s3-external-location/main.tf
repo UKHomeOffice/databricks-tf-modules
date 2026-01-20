@@ -68,8 +68,8 @@ data "aws_iam_policy_document" "assume_role" {
       type = "AWS"
       identifiers = [
         # TODO: This is what the value should be, but we can't refer to a role that doesn't exist yet.
-        #"arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:role/${local.role_name}",
-        "arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:root",
+        "arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:role/${local.role_name}",
+        #"arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:root",
         "arn:aws:iam::414351767826:role/unity-catalog-prod-UCMasterRole-14S5ZJVKOTYTL"
       ]
     }
