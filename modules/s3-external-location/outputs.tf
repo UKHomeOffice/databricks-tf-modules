@@ -13,11 +13,6 @@ output "iam_role_arn" {
   description = "ARN of the IAM role assumed by Databricks."
 }
 
-output "databricks_external_id" {
-  value       = random_uuid.external_id.result
-  description = "External ID used for sts:AssumeRole (also set in the storage credential)."
-}
-
 output "storage_credential_name" {
   value       = databricks_storage_credential.this.name
   description = "Unity Catalog storage credential name."
