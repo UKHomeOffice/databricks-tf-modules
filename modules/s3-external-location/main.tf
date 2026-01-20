@@ -166,6 +166,8 @@ resource "aws_iam_role_policy_attachment" "this" {
 # -----------------------------
 
 resource "databricks_storage_credential" "this" {
+  provider = databricks.workspace
+
   name    = local.storage_credential_name
   comment = "Terraform-managed storage credential for ${var.name}"
 
@@ -175,6 +177,8 @@ resource "databricks_storage_credential" "this" {
 }
 
 resource "databricks_external_location" "this" {
+  provider = databricks.workspace
+  
   name            = local.external_location_name
   url             = local.external_location_url
   credential_name = databricks_storage_credential.this.id
