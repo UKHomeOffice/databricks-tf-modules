@@ -1,4 +1,9 @@
+data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
+
 locals {
+  aws_account_id = data.aws_caller_identity.current.account_id
+
   bucket_name = coalesce(var.bucket_name, "${var.name}-external-location")
   role_name   = coalesce(var.iam_role_name, "${var.name}-uc-extloc-role")
 
@@ -10,8 +15,6 @@ locals {
 
   external_location_url = local.prefix == "" ? "s3://${local.bucket_name}" : "s3://${local.bucket_name}/${local.prefix}"
 }
-
-data "aws_partition" "current" {}
 
 resource "aws_s3_bucket" "this" {
   bucket        = local.bucket_name
@@ -55,10 +58,6 @@ resource "aws_s3_bucket_versioning" "this" {
   }
 }
 
-# External ID used by Databricks when assuming the role.
-# We set it explicitly to avoid chicken-and-egg issues.
-resource "random_uuid" "external_id" {}
-
 data "aws_iam_policy_document" "assume_role" {
   statement {
     sid     = "DatabricksAssumeRole"
@@ -66,14 +65,17 @@ data "aws_iam_policy_document" "assume_role" {
     actions = ["sts:AssumeRole"]
 
     principals {
-      type        = "AWS"
-      identifiers = ["arn:${data.aws_partition.current.partition}:iam::${var.databricks_aws_account_id}:root"]
+      type = "AWS"
+      identifiers = [
+        "arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:role/${local.role_name}",
+        "arn:aws:iam::414351767826:role/unity-catalog-prod-UCMasterRole-14S5ZJVKOTYTL"
+      ]
     }
 
     condition {
       test     = "StringEquals"
       variable = "sts:ExternalId"
-      values   = [random_uuid.external_id.result]
+      values   = [var.databricks_account_id]
     }
   }
 }
@@ -166,8 +168,7 @@ resource "databricks_storage_credential" "this" {
   comment = "Terraform-managed storage credential for ${var.name}"
 
   aws_iam_role {
-    role_arn    = aws_iam_role.this.arn
-    external_id = random_uuid.external_id.result
+    role_arn = aws_iam_role.this.arn
   }
 }
 

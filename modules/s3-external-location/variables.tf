@@ -51,12 +51,10 @@ variable "iam_role_name" {
   default     = null
 }
 
-variable "databricks_aws_account_id" {
-  description = <<EOT
-AWS account id used by Databricks to assume your IAM role (the 'Databricks AWS account ID' for your deployment).
-Your platform team usually has this value; it is constant per Databricks deployment.
-EOT
+variable "databricks_account_id" {
+  description = "ID of the Databricks account to use in the trust policy for our IAM role."
   type        = string
+  default     = null
 }
 
 variable "kms_key_arn" {
