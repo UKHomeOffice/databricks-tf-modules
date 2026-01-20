@@ -68,8 +68,8 @@ data "aws_iam_policy_document" "assume_role" {
       type = "AWS"
       identifiers = [
         # TODO: This is what the value should be, but we can't refer to a role that doesn't exist yet.
-        #"arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:role/${local.role_name}",
-        "arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:root",
+        "arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:role/${local.role_name}",
+        #"arn:${data.aws_partition.current.partition}:iam::${local.aws_account_id}:root",
         "arn:aws:iam::414351767826:role/unity-catalog-prod-UCMasterRole-14S5ZJVKOTYTL"
       ]
     }
@@ -166,8 +166,6 @@ resource "aws_iam_role_policy_attachment" "this" {
 # -----------------------------
 
 resource "databricks_storage_credential" "this" {
-  provider = databricks.workspace
-
   name    = local.storage_credential_name
   comment = "Terraform-managed storage credential for ${var.name}"
 
@@ -177,8 +175,6 @@ resource "databricks_storage_credential" "this" {
 }
 
 resource "databricks_external_location" "this" {
-  provider = databricks.workspace
-  
   name            = local.external_location_name
   url             = local.external_location_url
   credential_name = databricks_storage_credential.this.id
