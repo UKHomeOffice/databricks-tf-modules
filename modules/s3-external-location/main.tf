@@ -190,9 +190,9 @@ resource "databricks_external_location" "this" {
 
 resource "databricks_grants" "this" {
   external_location = databricks_external_location.this.id
-  
+
   grant {
-    principal  = "Data Engineers"
+    principal  = var.grant_principal_name
     privileges = ["CREATE_EXTERNAL_TABLE", "READ_FILES"]
   }
 }

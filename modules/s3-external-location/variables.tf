@@ -39,6 +39,12 @@ variable "external_location_name" {
   default     = null
 }
 
+variable "grant_principal_name" {
+  description = "The name of the principal that should be granted access to the external location"
+  type        = string
+  default     = null
+}
+
 variable "read_only" {
   description = "If true, create the External Location as read-only."
   type        = bool

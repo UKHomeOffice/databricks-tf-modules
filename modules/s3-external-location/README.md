@@ -10,9 +10,10 @@ module "s3_external_location" {
 
   name                    = "dsa-dev-databricks-raw-data-source-1"
   s3_prefix               = "databricks/raw"
+  grant_principal_name    = "Data Engineering"
   force_destroy           = false
   read_only               = true
-  skip_validation          = false
+  skip_validation         = false
 
   databricks_aws_account_id = var.databricks_aws_account_id
 
