@@ -65,7 +65,11 @@ resource "aws_s3_bucket_notification" "file_events" {
 
   queue {
     queue_arn = aws_sqs_queue.file_events[0].arn
-    events    = ["s3:ObjectCreated:*"]
+    events = [
+      "s3:ObjectCreated:*",
+      "s3:ObjectRemoved:*",
+      "s3:LifecycleExpiration:*"
+    ]
 
     filter_prefix = local.prefix
   }
@@ -220,6 +224,7 @@ data "aws_iam_policy_document" "s3_access" {
       actions = [
         "sqs:ReceiveMessage",
         "sqs:DeleteMessage",
+        "sqs:SendMessage",
         "sqs:PurgeQueue",
         "sqs:GetQueueAttributes"
       ]
