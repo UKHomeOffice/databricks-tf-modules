@@ -58,6 +58,34 @@ resource "aws_s3_bucket_versioning" "this" {
   }
 }
 
+resource "aws_s3_bucket_notification" "file_events" {
+  count = var.enable_file_events ? 1 : 0
+
+  bucket = aws_s3_bucket.this.id
+
+  queue {
+    queue_arn = aws_sqs_queue.file_events[0].arn
+    events    = ["s3:ObjectCreated:*"]
+
+    filter_prefix = local.prefix
+  }
+
+  depends_on = [
+    aws_sqs_queue_policy.this
+  ]
+}
+
+resource "aws_sqs_queue" "file_events" {
+  count = var.enable_file_events ? 1 : 0
+
+  name = "${var.name}-databricks-file-events"
+
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 86400
+
+  tags = var.tags
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     sid     = "DatabricksAssumeRole"
@@ -86,6 +114,40 @@ resource "aws_iam_role" "this" {
   name               = local.role_name
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
   tags               = var.tags
+}
+
+# IAM permissions for S3 to send event notifications to the SQS queue
+data "aws_iam_policy_document" "sqs_policy" {
+  count = var.enable_file_events ? 1 : 0
+
+  statement {
+    sid    = "AllowS3SendMessage"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+
+    actions = ["sqs:SendMessage"]
+
+    resources = [
+      aws_sqs_queue.file_events[0].arn
+    ]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_s3_bucket.this.arn]
+    }
+  }
+}
+
+resource "aws_sqs_queue_policy" "this" {
+  count = var.enable_file_events ? 1 : 0
+
+  queue_url = aws_sqs_queue.file_events[0].id
+  policy    = data.aws_iam_policy_document.sqs_policy[0].json
 }
 
 # IAM permissions for Databricks to access the bucket/prefix.
@@ -148,6 +210,25 @@ data "aws_iam_policy_document" "s3_access" {
       resources = [var.kms_key_arn]
     }
   }
+
+  dynamic "statement" {
+    for_each = var.enable_file_events ? [1] : []
+    content {
+      sid    = "SqsForFileEvents"
+      effect = "Allow"
+
+      actions = [
+        "sqs:ReceiveMessage",
+        "sqs:DeleteMessage",
+        "sqs:PurgeQueue",
+        "sqs:GetQueueAttributes"
+      ]
+
+      resources = [
+        aws_sqs_queue.file_events[0].arn
+      ]
+    }
+  }
 }
 
 resource "aws_iam_policy" "this" {
@@ -182,9 +263,21 @@ resource "databricks_external_location" "this" {
   comment         = "Terraform-managed external location for ${var.name}"
   skip_validation = var.skip_validation
 
+  enable_file_events = var.enable_file_events
+
+  dynamic "file_event_queue" {
+    for_each = var.enable_file_events ? [1] : []
+    content {
+      provided_sqs {
+        queue_url = aws_sqs_queue.file_events[0].id
+      }
+    }
+  }
+
   depends_on = [
     aws_s3_bucket_public_access_block.this,
-    aws_iam_role_policy_attachment.this
+    aws_iam_role_policy_attachment.this,
+    aws_s3_bucket_notification.file_events
   ]
 }
 

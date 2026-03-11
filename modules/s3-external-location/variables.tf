@@ -74,3 +74,9 @@ variable "skip_validation" {
   type        = bool
   default     = false
 }
+
+variable "enable_file_events" {
+  description = "Enable Databricks file events using SQS for Auto Loader."
+  type        = bool
+  default     = false
+}
